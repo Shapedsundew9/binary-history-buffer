@@ -1,4 +1,4 @@
 """Direct imports."""
-from .obscure import obscure, unobscure
+from .binary_history_buffer import binary_history_buffer, bhb
 
-__all__ = ['obscure', 'unobscure']
+__all__: list[str] = ['binary_history_buffer', 'bhb']

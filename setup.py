@@ -25,7 +25,7 @@ setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name='obscure-password',  # Required
+    name='binary-history-buffer',  # Required
 
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
@@ -33,12 +33,12 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.0.3',  # Required
+    version='0.1.0',  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description='Self contained obfuscation of hardcoded passwords in Python scripts.',
+    description='Maintains a compressed history of a binary state.',
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
@@ -66,7 +66,7 @@ setup(
     #
     # This field corresponds to the "Home-Page" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#home-page-optional
-    url='https://github.com/Shapedsundew9/obscure-password',  # Optional
+    url='https://github.com/Shapedsundew9/binary-history-buffer',  # Optional
 
     # This should be your name or the name of the organization which owns the
     # project.
@@ -84,7 +84,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 3 - Alpha',
 
         # Indicate who your project is intended for
         'Intended Audience :: Developers',
@@ -110,7 +110,7 @@ setup(
     # Note that this is a list of additional keywords, separated
     # by commas, to be used to assist searching for the distribution in a
     # larger catalog.
-    keywords='password, obfuscation, obscure, development',  # Optional
+    keywords='binary string, binary history',  # Optional
 
     # When your source code is in a subdirectory under the project root, e.g.
     # `src/`, it is necessary to specify the `package_dir` argument.
@@ -126,7 +126,7 @@ setup(
     #   py_modules=["my_module"],
     #
     # packages=find_packages(where=''),  # Required
-    packages=['obscure_password'],
+    packages=['binary_history_buffer'],
 
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this
@@ -188,7 +188,7 @@ setup(
     # maintainers, and where to support the project financially. The key is
     # what's used to render the link text on PyPI.
     project_urls={  # Optional
-        'Bug Reports': 'https://github.com/Shapedsundew9/obscure-password/issues',
-        'Source': 'https://github.com/Shapedsundew9/obscure-password',
+        'Bug Reports': 'https://github.com/Shapedsundew9/binary-history-buffer/issues',
+        'Source': 'https://github.com/Shapedsundew9/binary-history-buffer',
     },
 )
