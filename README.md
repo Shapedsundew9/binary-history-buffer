@@ -1,6 +1,6 @@
-# Binary History Buffer (BHB)
+# Binary History Buffer Log2 (BHBL2)
 
-BHB record the state history of a binary varibale at reducing fidelity as the history ages. The primary use
+BHB record the state history of a binary variable at reducing fidelity as the history ages. The primary use
 case is in implementing temporal effectivness tables. e.g. Given N operations to choose from record the success
 or failure of each application of each operation in a binary string. To prevent the binary string consuming too
 much memory store longer segements of older history at reduced fidelity. 
@@ -60,9 +60,32 @@ value of Carry Bit N is 0.
 **NOTE**: Whilst overall the total counts of 1s and 0s are maintained the 'future bias' of the carry bit means
 1s tend to move to the left.
 
+## Implementation: The hold bit
+
+In the examples above updates come in multiples of 2 which keeps the explaination of what is happening simple. In reality
+updates come one at a time and the implementation must account for the fact only 1 bit has been pushed out of store index N
+which is not enough to update store index N+1. In this case the evicted bit from store index N is preserved in memory
+to be combined with the next evicted bit (and the carry bit) to determine the update for store index N+1.
+
+The current implementation maintains these store extra bits or state in a structure called _data_. _data_ has the
+shape (number of buffers, number of stores) and is of type numpy.uint8. Each data element has the structure:
+
+| Bits 7-3 | Bit 2      | Bit 1 | Bit 0 |
+|:--------:|:----------:|:-----:|:-----:|
+| Reserved | Hold Valid | Hold  | Carry |
+
+Reserved = Undefined & not guaranteed to be preserved.
+Hold valid = If True indicates that the bit in Hold is valid. 
+Hold: The 1st bit in the evicted pair needed to update the next store. If Hold Valid is True else 0.
+Carry: As defined above.
+
+When calculating the ratio of hits (set bits) in a history length or store the hold & carry bits are considered. i.e. the 
+maximum number of bits in a store may be 66 if the hold bit is valid and the carry is set. Thus the error in a window may
+be up to 1 in 32 ~ 3% in event history th
+
 ## Resources
 
-Memory ~= # stores * # buffers * 9 bytes.
+Memory ~= # stores * # buffers * 10 bytes.
 
 e.g. An 8 store (max N = 7 so last history bit = 2<sup>7+7</sup> + 65 = 16449) 128 buffer BHB object would
 use 8 * 128 * 9 = 9216 bytes + class overhead.

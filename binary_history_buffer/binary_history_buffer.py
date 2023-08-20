@@ -1,75 +1,73 @@
 """Binary History Buffer."""
 
-from numpy import uint64, uint32, uint8, zeros, unpackbits
-from numpy.typing import NDArray
+from logging import DEBUG, Logger, NullHandler, getLogger
+from numpy import uint64, float64, minimum
+
+
+_logger: Logger = getLogger(__name__)
+_logger.addHandler(NullHandler())
+_LOG_DEBUG: bool = _logger.isEnabledFor(DEBUG)
 
 
 class binary_history_buffer():
-    """Maintains a compressed history of a binary state.
-    
-    See https://github.com/Shapedsundew9/binary-history-buffer/blob/main/README.md for details.
-    """
+    """Maintains a compressed history of a binary state."""
 
-    def __init__(self, size: int = 13, length: int = 7) -> None:
+    def __init__(self, limit: int = 0) -> None:
         """Create a binary history buffer.
+        
+        Args
+        ----
 
-        Args:
-            size (int, optional): log2 number of buffers to maintain. Defaults to 13 (8192 entries).
-            length (int, optional): Length of the buffer in indexes. Defaults to 7 (8192 bits)
+        limit: The maximum number of bits to store in the buffer. 0 = infinite
         """
-        self._size: int = 2**size
-        self._length: int = length
-        self.updates: NDArray[uint32] = zeros(self._size, dtype=uint32)
-        self.buffers: NDArray[uint64] = zeros((self._size, self._length), dtype=uint64)
-        self._data: NDArray[uint8] = zeros((self._size, self._length), dtype=uint8)
+        self.limit: uint64 = uint64(limit)
+        self.buffer: int = 0
+        self.updates: uint64 = uint64(0)
+        self.hits: uint64 = uint64(0)
 
-    def __getitem__(self, entry: int) -> list[float]:
-        """Get the fraction of True updates for each store.
-
-        Args:
-            entry (int): The entry to get.
+    def totals(self) -> tuple[uint64, uint64, float64]:
+        """Get the total number of hits, updates & the ratio for the entry.
 
         Returns:
-            NDArray[uint64]: The binary history buffer entry.
+            (Total True updates, Total updates, Hit Ratio)
         """
-        buf: NDArray[uint64] = self.buffers[entry]
-        updates: NDArray[uint32] = self.updates[entry]
-        data: NDArray[uint32] = self._data[entry]
-        set_bits: list[int] = [unpackbits(s).sum() for n, s in enumerate(buf, 6) if 2**n - 64 < updates]
-        extra_set_bits: list[int] = [(d & 0x1) + (((d >> 1) & 0x1) & (d >> 2)) for d in data[:len(set_bits)]]
-        num_bits: list[int] = [64 + (d & 0x1) + (d >> 2) for d in data[:len(set_bits)]]
-        last_index: int = len(set_bits) - 1
-        num_bits[-1] = int((self.updates[entry] - (2**(last_index+6) - 64)) / 2**last_index)
-        return [(s + e) / n for s, e, n in zip(set_bits, extra_set_bits, num_bits)]
-
-    def bit_ranges(self) -> tuple[tuple[int, int], ...]:
-        """Get the bit range for each store."""
-        return tuple((2**(n + 6) - 64, 2**(n + 7) - 65) for n in range(self._length))
+        return self.hits, self.updates, self.hits / self.updates
     
-    def __setitem__(self, entry: int, value: bool) -> None:
+    def history(self, length: int, start: int = 0) -> tuple[uint64, uint64, float64]:
+        """Get the fraction of True updates for each history period.
+        
+        Args:
+            length: The length of bit history to evaluate.
+            start: The starting bit position for the length. Defaults to 0.
+        Returns:
+            (# True updates, # Updates, Ratio)
+        """
+        limit: uint64 = minimum(self.updates, self.limit) if self.limit else self.updates
+        if (start + length) > limit:
+            _logger.debug('Reducing history length to fit buffer')
+            length = int(self.updates - start)
+        history: int = ((1 << length) - 1) & (self.buffer >> start)
+        hits: uint64 = uint64(history.bit_count())
+        bits: uint64 = uint64(length)
+        if _LOG_DEBUG:
+            _logger.debug(f'History start {start}, length {length}, # hits {hits}, # bits {bits}, ratio {hits / bits}')
+            for nbit in range(0, length, 64):
+                bit_str: str = f'{(history >> nbit) & ((1 << 64) - 1):064b}'
+                _logger.debug(f'History #{nbit:06d} {bit_str}')
+        return hits, bits, hits / bits
+
+    def update(self, value: bool) -> None:
         """Insert a new value into the entry history buffer.
 
         Args:
-            entry (int): The entry to insert the value into.
             value (bool): The value to insert.
         """
-        self.updates[entry] += 1
-        for idx in range(self._length):
-            data: uint8 = self._data[entry][idx]
-            carry: bool = bool(data & 0x1)
-            hold: bool = bool(data & 0x2)
-            hold_valid: bool = bool(data & 0x4)
-            store: uint64 = self.buffers[entry][idx]
-            evicted_bit: uint8 = uint8(store & 0x1)
-            self.buffers[entry][idx] = (store >> 1) | (uint64(value) << 63)
-            if hold_valid:
-                state: uint8 = hold + evicted_bit + carry
-                carry = bool(state & 1)
-                value = bool(state >= 2)
-                self._data[entry][idx] = uint8(carry)
-            else:
-                self._data[entry][idx] = uint8(4 + evicted_bit * 2 + carry)
-                break
+        self.buffer = (self.buffer << 1) | int(value)
+        if self.limit > 0:
+            self.buffer &= (1 << int(self.limit)) - 1
+        self.updates += 1
+        self.hits += int(value)
 
-# Alias
+
+# Aliases
 bhb = binary_history_buffer
