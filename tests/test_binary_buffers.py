@@ -2,7 +2,7 @@ import pytest
 from typing import LiteralString
 from pprint import pformat
 from logging import DEBUG, Logger, NullHandler, getLogger
-from binary_history_buffer import bhb, bhbl2, bhbl2t
+from binary_history_buffer import bhb, bhbz, bhbzt
 from numpy.typing import NDArray
 from numpy import uint64, float64, array, int64, isclose, zeros
 from numpy.random import default_rng, Generator, normal
@@ -37,8 +37,8 @@ TEST_LF_RND_PATTERNS: list[LiteralString] = [
 def test_64_bit_patterns(pattern) -> None:
     """Test 64 bit patterns."""
     bhb64 = bhb()
-    bhbl264 = bhbl2()
-    bhbl264t = bhbl2t()
+    bhbl264 = bhbz()
+    bhbl264t = bhbzt()
     for bit in pattern:
         bhb64.update(bit == '1')
         bhbl264.update(bit == '1')
@@ -63,8 +63,8 @@ def test_hf_rnd_patterns_big_buffer(pattern) -> None:
             bit_str: str = f'{(value >> nbit) & ((1 << 64) - 1):064b}'
             _logger.debug(f'Pattern #{nbit:06d} {bit_str}')
     bhb64 = bhb()
-    bhbl264 = bhbl2(length=8)
-    bhbl264t = bhbl2t(length=8)
+    bhbl264 = bhbz(length=8)
+    bhbl264t = bhbzt(length=8)
     for bit in pattern:
         bhb64.update(bit == '1')
         bhbl264.update(bit == '1')
@@ -96,8 +96,8 @@ def test_hf_rnd_patterns_small_buffer(pattern) -> None:
             bit_str: str = f'{(value >> nbit) & ((1 << 64) - 1):064b}'
             _logger.debug(f'Pattern #{nbit:06d} {bit_str}')
     bhb64 = bhb()
-    bhbl264 = bhbl2(length=4)
-    bhbl264t = bhbl2t(length=4)
+    bhbl264 = bhbz(length=4)
+    bhbl264t = bhbzt(length=4)
     for bit in pattern:
         bhb64.update(bit == '1')
         bhbl264.update(bit == '1')
@@ -129,8 +129,8 @@ def test_lf_rnd_patterns_big_buffer(pattern) -> None:
             bit_str: str = f'{(value >> nbit) & ((1 << 64) - 1):064b}'
             _logger.debug(f'Pattern #{nbit:06d} {bit_str}')
     bhb64 = bhb()
-    bhbl264 = bhbl2(length=8)
-    bhbl264t = bhbl2t(length=8)
+    bhbl264 = bhbz(length=8)
+    bhbl264t = bhbzt(length=8)
     for bit in pattern:
         bhb64.update(bit == '1')
         bhbl264.update(bit == '1')
@@ -155,7 +155,7 @@ def test_lf_rnd_patterns_big_buffer(pattern) -> None:
 def test_plot():
     ratio_histories = zeros((2, 8, len(TEST_HF_RND_PATTERNS[0])), dtype=float64)
     bhb64 = bhb()
-    bhbl264 = bhbl2(length=8)
+    bhbl264 = bhbz(length=8)
     for n, bit in enumerate(TEST_HF_RND_PATTERNS[0]):
         bhb64.update(bit == '1')
         bhbl264.update(bit == '1')

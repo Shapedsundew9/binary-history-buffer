@@ -1,3 +1,16 @@
+# Binary History Buffers
+
+Binary history buffers record the state of a binary variable efficiently. There are 3 types implemented trading
+off memory usage for accuracy:
+
+. Binary History Buffer, bhb: Stores a fixed length recent history or infinite history of states with no compression or loss.
+. Binary History Buffer Z, bhbz: Reduces fidelity of older history to reduce storage costs.
+. Binary History Buffer Log2, bhbl2: A specialised use case where the relative weight of history bits reduces at 2<sup>-x</sup>.
+
+Each class implements the same interface:
+
+
+
 # Binary History Buffer Log2 (BHBL2)
 
 BHB record the state history of a binary variable at reducing fidelity as the history ages. The primary use
