@@ -1,7 +1,7 @@
 """Binary History Buffer."""
 
 from __future__ import annotations
-from typing import Any
+from typing import Any, Hashable
 from logging import DEBUG, Logger, NullHandler, getLogger
 
 from numpy import uint64, uint32, uint8, zeros, float64
@@ -63,6 +63,41 @@ class binary_history_buffer_log2_table():
         """Return the normalized weighted history ratios."""
         return self.buffer / self.buffer.sum()
 
+
+class mapped_binary_history_buffer_log2_table(binary_history_buffer_log2_table):
+    """Maps a key to a binary history buffer log2 table entry."""
+
+    def __init__(self, size: int = 1, nlsb: int = 0) -> None:
+        """Create a binary history buffer log2 table with a key index.
+
+        Args:
+            size: Number of buffers to maintain in the table. Defaults to 1.
+            nlsb: The number of guaranteed set oldest (least significant) bits. Defaults to 0.
+        """
+        super().__init__(size, nlsb)
+        self._keys: dict[Hashable, int] = {}
+
+    def __getitem__(self, key: Hashable) -> binary_history_buffer_log2:
+        """Get the binary history buffer associated with the key.
+
+        Args:
+            key: The key of the buffer to get.
+
+        Returns:
+            The binary history buffer.
+        """
+        return super()[self._keys[key]]
+
+    def __setitem__(self, key: Hashable, value: bool) -> None:
+        """Insert a new value into the entry history buffer.
+
+        Args:
+            key: The key of the buffer to insert the value into.
+            value (bool): The value to insert.
+        """
+        super()[self._keys[key]] = value
+
+
 class binary_history_buffer_log2():
     """Maintains a compressed history of a binary state."""
 
@@ -70,9 +105,8 @@ class binary_history_buffer_log2():
         """Create a binary history buffer.
 
         Args:
-            bhbt: The table to use. If None a single entry table is created.
+            bhbtl2: The table to use. If None a single entry table is created.
             entry: The entry to use. Defaults to 0.
-            length: Log2(length of the buffer) - 6. Defaults to 6 (4096 bits). Only used if bhbt = None
         """
         self._bhbl2t: binary_history_buffer_log2_table = bhbl2t if bhbl2t is not None else binary_history_buffer_log2_table()
         self._entry: int = entry

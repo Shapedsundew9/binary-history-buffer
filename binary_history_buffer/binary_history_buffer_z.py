@@ -1,11 +1,13 @@
 """Binary History Buffer."""
 
 from __future__ import annotations
-from typing import Any, Hashable
+from typing import Any
 from logging import DEBUG, Logger, NullHandler, getLogger
 
-from numpy import int64, uint64, uint32, uint8, int8, zeros, signedinteger, float64, arange, power, cumsum
+from numpy import int64, uint64, integer, uint8, int8, zeros, signedinteger, float64, arange, power, cumsum, log2
 from numpy.typing import NDArray
+
+from .binary_history_buffer import binary_history_buffer
 
 
 _logger: Logger = getLogger(__name__)
@@ -13,121 +15,37 @@ _logger.addHandler(NullHandler())
 _LOG_DEBUG: bool = _logger.isEnabledFor(DEBUG)
 
 
-class binary_history_buffer_z_table():
-    """Maintains a compressed history of a binary state.
-    
-    See https://github.com/Shapedsundew9/binary-history-buffer/blob/main/README.md for details.
-    """
-
-    def __init__(self, size: int = 1, length: uint8 | int = 6) -> None:
-        """Create a binary history buffer.
-
-        Args:
-            size: Number of buffers to maintain in the table. Defaults to 1.
-            length: Log2(length of the buffer) - 6. Defaults to 6 (4096 bits)
-        """
-        self._size: int = size
-        self._length: uint8 = uint8(length)
-
-        # Member descriptions:
-        # updates: The total number of updates for each entry i.e. the number of bits in the history.
-        # hits: The total number of True updates for each entry.
-        # buffers: The history buffers.
-        # _data: The carry, hold, and hold_valid bits for each store.
-        # _hits: The number of True updates for each store (exclusing hold and carry bits)
-        self.updates: NDArray[uint32] = zeros(self._size, dtype=uint64)
-        self.hits: NDArray[uint32] = zeros(self._size, dtype=uint64)
-        self.buffer: NDArray[uint64] = zeros((self._size, self._length), dtype=uint64)
-        self._data: NDArray[uint8] = zeros((self._size, self._length), dtype=uint8)
-        self._hits: NDArray[int8] = zeros((self._size, self._length), dtype=int8)
-
-    def __getitem__(self, entry: int) -> binary_history_buffer_z:
-        """Get the fraction of True updates for each store.
-
-        Args:
-            entry (int): The entry to get.
-
-        Returns:
-            NDArray[uint64]: The binary history buffer entry.
-        """
-        return binary_history_buffer_z(self, entry)
-   
-    def __setitem__(self, entry: int, value: bool) -> None:
-        """Insert a new value into the entry history buffer.
-
-        Args:
-            entry (int): The entry to insert the value into.
-            value (bool): The value to insert.
-        """
-        self.updates[entry] += 1
-        self.hits[entry] += int8(value)
-        for idx in range(self._length):
-            data: uint8 = self._data[entry][idx]
-            carry: bool = bool(data & 0x1)
-            hold: bool = bool(data & 0x2)
-            hold_valid: bool = bool(data & 0x4)
-            store: uint64 = self.buffer[entry][idx]
-            evicted_bit: uint8 = uint8(store >> uint64(63))
-            self.buffer[entry][idx] = (store << uint64(1)) | uint64(value)
-            self._hits[entry][idx] += int8(value) - int8(evicted_bit)
-            if hold_valid:
-                state: uint8 = hold + evicted_bit + carry
-                carry = bool(state & 1)
-                value = bool(state >= 2)
-                self._data[entry][idx] = uint8(carry)
-            else:
-                self._data[entry][idx] = uint8(4 + evicted_bit * 2 + carry)
-                break
-
-
-class mapped_binary_history_buffer_log2_table(binary_history_buffer_z_table):
-    """Maps a key to a binary history buffer compressed table entry."""
-
-    def __init__(self, size: int = 1, length: int | uint8 = 6) -> None:
-        """Create a binary history buffer log2 table with a key index.
-
-        Args:
-            size: Number of buffers to maintain in the table. Defaults to 1.
-            length: Log2(length of the buffer) - 6. Defaults to 6 (4096 bits)
-        """
-        super().__init__(size, length)
-        self._keys: dict[Hashable, int] = {}
-
-    def __getitem__(self, key: Hashable) -> binary_history_buffer_z:
-        """Get the binary history buffer associated with the key.
-
-        Args:
-            key: The key of the buffer to get.
-
-        Returns:
-            The binary history buffer.
-        """
-        return super()[self._keys[key]]
-
-    def __setitem__(self, key: Hashable, value: bool) -> None:
-        """Insert a new value into the entry history buffer.
-
-        Args:
-            key: The key of the buffer to insert the value into.
-            value (bool): The value to insert.
-        """
-        super()[self._keys[key]] = value
-
-
-class binary_history_buffer_z():
+class binary_history_buffer_z(binary_history_buffer):
     """Maintains a compressed history of a binary state."""
 
-    def __init__(self, bhbl2t: binary_history_buffer_z_table | None = None, entry: int = 0, length: uint8 | int = 6) -> None:
-        """Create a binary history buffer.
+    def __init__(self, limit: int | integer = 0) -> None:
+        """Create a compressed binary history buffer.
+        
+        Args
+        ----
 
-        Args:
-            bhbt: The table to use. If None a single entry table is created.
-            entry: The entry to use. Defaults to 0.
-            length: Log2(length of the buffer) - 6. Defaults to 6 (4096 bits). Only used if bhbt = None
+        limit: The maximum number of bits to store in the buffer. 0 = infinite.
         """
-        self._bhbl2t: binary_history_buffer_z_table = bhbl2t if bhbl2t is not None else binary_history_buffer_z_table(length=length)
-        self._entry: int = entry
+        self.limit: uint64 = uint64(limit)
+        self.updates: uint64 = uint64(0)
+        self.hits: uint64 = uint64(0)
+        self._size: int = int(log2(limit)) - 5 if limit else 58
+        self._last_index = 0
+        self._last_index_updates: uint64 = uint64(0)
+        self._hits: NDArray[uint64] = zeros(self._size, dtype=int8)
+        self._bits: NDArray[uint64] = zeros(self._size, dtype=int8)
+        self._data: NDArray[uint64] = zeros(self._size, dtype=int8)
+        self._buffer: NDArray[uint64] = zeros(self._size, dtype=uint64)
+        print(self)
 
+    def _get_bit(self, index: int | integer) -> bool:
+        """Get the state of a bit in the history."""
+        if index < 0:
+            index = max(0, self._last_index + index)
+        elif index > self._last_index:
+            index = self._last_index
+        return bool(self._buffer[index >> 6] & (1 << (index & 0x3f)))
+    
     def totals(self) -> tuple[uint64, uint64, float64]:
         """Get the total number of hits, updates & the ratio for the entry.
 

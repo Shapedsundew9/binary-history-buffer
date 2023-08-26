@@ -1,14 +1,27 @@
 # Binary History Buffers
 
-Binary history buffers record the state of a binary variable efficiently. There are 3 types implemented trading
+Binary history buffers record the state of a binary variable efficiently. There are 2 types implemented trading
 off memory usage for accuracy:
 
-. Binary History Buffer, bhb: Stores a fixed length recent history or infinite history of states with no compression or loss.
-. Binary History Buffer Z, bhbz: Reduces fidelity of older history to reduce storage costs.
-. Binary History Buffer Log2, bhbl2: A specialised use case where the relative weight of history bits reduces at 2<sup>-x</sup>.
+| Class                   | Description                                   | Memory Usage        |
+|:------------------------|:----------------------------------------------|:-------------------:|
+| binary_history_buffer   | Full fidelity history                         | ~O(N) + C           |
+| binary_history_buffer_z | Older history is compressed reducing fidelity | ~O(log2(N/64)) + C  |
 
-Each class implements the same interface:
+Where N is the history buffer size in bits and C is a class overhead. Each class implements the same interface:
 
+| Method            | Description                                      | Performance |
+|:------------------|:-------------------------------------------------|:-----------:|
+| get()             | Return the most recent state                     | bhb == bhbz |
+| update()          | Set the push in a state                          | bhb == bhbz |
+| totals()          | Total hits, updates & hit ratio                  | bhb > bhbz  |
+| history()         | Return the history window                        | bhb > bhbz  |
+| history_totals()  | Hits, updates & hit ratio for the history window | bhbz > bhb  |
+
+Throughout the documentation the terms 'hit', 'set', '1', 'True' and 'miss', 'clear', '0', 'False' are
+equivilent in the context of the value/state of an instance of the binary history.
+
+NOTE: The accuracy of history*() methods reduces proportionally to log2(N/64) for bhbz. 
 
 
 # Binary History Buffer Log2 (BHBL2)
