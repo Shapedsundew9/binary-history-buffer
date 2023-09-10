@@ -13,9 +13,9 @@ _logger.addHandler(NullHandler())
 _LOG_DEBUG: bool = _logger.isEnabledFor(DEBUG)
 
 
-class binary_history_buffer_log2_table():
+class binary_history_buffer_log2_table:
     """Maintains a 64 bit history of a binary state with a log2 weighting
-    
+
     See https://github.com/Shapedsundew9/binary-history-buffer/blob/main/README.md for details.
     """
 
@@ -47,7 +47,7 @@ class binary_history_buffer_log2_table():
             NDArray[uint64]: The binary history buffer entry.
         """
         return binary_history_buffer_log2(self, entry)
-   
+
     def __setitem__(self, entry: int, value: bool) -> None:
         """Insert a new value into the entry history buffer.
 
@@ -98,17 +98,21 @@ class mapped_binary_history_buffer_log2_table(binary_history_buffer_log2_table):
         super()[self._keys[key]] = value
 
 
-class binary_history_buffer_log2():
+class binary_history_buffer_log2:
     """Maintains a compressed history of a binary state."""
 
-    def __init__(self, bhbl2t: binary_history_buffer_log2_table | None = None, entry: int = 0) -> None:
+    def __init__(
+        self, bhbl2t: binary_history_buffer_log2_table | None = None, entry: int = 0
+    ) -> None:
         """Create a binary history buffer.
 
         Args:
             bhbtl2: The table to use. If None a single entry table is created.
             entry: The entry to use. Defaults to 0.
         """
-        self._bhbl2t: binary_history_buffer_log2_table = bhbl2t if bhbl2t is not None else binary_history_buffer_log2_table()
+        self._bhbl2t: binary_history_buffer_log2_table = (
+            bhbl2t if bhbl2t is not None else binary_history_buffer_log2_table()
+        )
         self._entry: int = entry
 
     def totals(self) -> tuple[uint64, uint64, float64]:
@@ -121,10 +125,10 @@ class binary_history_buffer_log2():
         updates: uint64 = self._bhbl2t.updates[self._entry]
         ratio: float64 = hits / updates
         return hits, updates, ratio
- 
+
     def history(self) -> tuple[uint64, uint64, float64]:
         """Get the fraction of True updates for each history period.
-        
+
         Args:
             length: The length of bit history to evaluate.
 
