@@ -26,7 +26,6 @@ class binary_history_buffer:
         self.buffer: int = int(_initial_state)
         self.updates: uint64 = uint64(_initial_state.bit_length() - 1)
         self.hits: uint64 = uint64(_initial_state.bit_count() - 1)
-        print(self)
 
     def __len__(self) -> int:
         """Get the length of the history. The maximum length is the limit of the buffer.
@@ -61,7 +60,6 @@ class binary_history_buffer:
             elif stop > limit:
                 stop = limit
             length: int = stop - start
-            print(f"Slicing start {start}, stop {stop}, length {length}, limit {limit}")
             if length <= 0:  # 0 length slice
                 return self.__class__(self.limit)
             return self.history(start, length)
@@ -117,7 +115,6 @@ class binary_history_buffer:
             _logger.debug("Reducing history length to fit buffer")
             length = int(limit - start)
         marker: int = 1 << int(length)
-        print(f"Marker: {marker:b}, Start: {start}, Length: {length}")
         return int((marker - 1) & (self.buffer >> start) | marker)
 
     def as_str(self, start: int | integer = 0, length: int | integer = 0) -> str:
