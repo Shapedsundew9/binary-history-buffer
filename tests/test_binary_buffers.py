@@ -10,6 +10,7 @@ from numpy.random import Generator, default_rng, normal
 
 from binary_history_buffer import bhb
 
+
 _logger: Logger = getLogger(__name__)
 _logger.addHandler(NullHandler())
 _LOG_DEBUG: bool = _logger.isEnabledFor(DEBUG)

@@ -21,7 +21,7 @@ from numpy import (
 from numpy.typing import NDArray
 
 from .binary_history_buffer import binary_history_buffer
-
+from .binary_history_buffer_log2 import 
 
 _logger: Logger = getLogger(__name__)
 _logger.addHandler(NullHandler())
