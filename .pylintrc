@@ -172,7 +172,7 @@ function-naming-style=snake_case
 # Regular expression matching correct function names. Overrides function-
 # naming-style. If left empty, function names will be checked with the set
 # naming style.
-function-rgx=*GC*
+#function-rgx=
 
 # Good variable names which should always be accepted, separated by a comma.
 good-names=i,
@@ -306,8 +306,8 @@ min-public-methods=2
 [EXCEPTIONS]
 
 # Exceptions that will emit a warning when caught.
-overgeneral-exceptions=BaseException,
-                       Exception
+overgeneral-exceptions=builtins.BaseException,
+                       builtins.Exception
 
 
 [FORMAT]
